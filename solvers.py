@@ -2,6 +2,7 @@ import enum
 import random
 from typing import Callable
 
+from cvc5 import pythonic as cvc5
 import z3
 
 import polynomials
@@ -20,6 +21,15 @@ class SatResult(enum.Enum):
     if sat_result == z3.sat:
       return SatResult.SAT
     elif sat_result == z3.unsat:
+      return SatResult.UNSAT
+    else:
+      return SatResult.UNKNOWN
+
+  @staticmethod
+  def from_cvc5_sat_result(sat_result : cvc5.CheckSatResult) -> SatResult:
+    if sat_result == cvc5.sat:
+      return SatResult.SAT
+    elif sat_result == cvc5.unsat:
       return SatResult.UNSAT
     else:
       return SatResult.UNKNOWN
@@ -74,6 +84,36 @@ def convert_system_to_z3_expr_using_int_mod_p(p: int, sys : System) -> z3.ExprRe
     exprs_for_eqns.append(convert_equation_to_z3_expr_using_int_mod_p(p, eqn))
   return z3.And(*exprs_for_eqns)
 
+def generate_pow_cvc5_expr(cvc5_var : cvc5.ExprRef, exp : int) -> cvc5.ExprRef:
+  if exp < 1:
+    raise Exception("exp < 1 is not supported")
+
+  expr : cvc5.ExprRef = cvc5_var
+  for _ in range(exp - 1):
+    expr = expr * cvc5_var
+  return expr
+
+def convert_equation_to_cvc5_expr_using_finite_field(p : int, eqn : Equation) -> cvc5.ExprRef:
+  eqn_expr : cvc5.ExprRef = None
+  for coeff, vars_dict in eqn:
+    term_expr = cvc5.FiniteFieldVal(coeff, p)
+    for var, exp in vars_dict.items():
+      cvc5_var = cvc5.FiniteFieldElem(var, p)
+      term_expr = term_expr * generate_pow_cvc5_expr(cvc5_var, exp)
+    if eqn_expr is None:
+      eqn_expr = term_expr
+    else:
+      eqn_expr += term_expr
+  if eqn_expr is not None:
+    return (eqn_expr == 0)
+  return z3.BoolVal(True)
+
+def convert_system_to_cvc5_expr_using_finite_field(p : int, sys : System) -> cvc5.ExprRef:
+  exprs_for_eqns = []
+  for eqn in sys:
+    exprs_for_eqns.append(convert_equation_to_cvc5_expr_using_finite_field(p, eqn))
+  return cvc5.And(*exprs_for_eqns)
+
 def solve_using_smt_reals(sys : System) -> SatResult:
   print("Checking satisfiablilty using SMT reals")
   real_system, imag_system = polynomials.split_system_into_real_and_complex(sys)
@@ -91,6 +131,12 @@ def solve_using_z3_int_mod_p(p : int, sys : System) -> SatResult:
   s.set("timeout", 60000)
   return SatResult.from_z3_sat_result(s.check())
 
+def solve_using_cvc5_finite_field(p : int, sys : System) -> SatResult:
+  cvc5_expr = convert_system_to_cvc5_expr_using_finite_field(p, sys)
+  s = cvc5.Solver()
+  s.set("tlimit", 60000)
+  s.add(cvc5_expr)
+  return SatResult.from_cvc5_sat_result(s.check())
 
 def check_sat_using_smt_reals(sys: System) -> SatResult:
   return solve_using_smt_reals(sys)
@@ -124,3 +170,7 @@ def check_sat_by_sweeping_primes(sys : System,
 def check_sat_by_sweeping_primes_z3(sys: System) -> SatResult:
   print(f"Checking satisfiablilty by sweeping primes using Z3 ints")
   return check_sat_by_sweeping_primes(sys, solve_using_z3_int_mod_p)
+
+def check_sat_by_sweeping_primes_cvc5(sys: System) -> SatResult:
+  print(f"Checking satisfiablilty by sweeping primes using CVC5 Finite Field")
+  return check_sat_by_sweeping_primes(sys, solve_using_cvc5_finite_field)

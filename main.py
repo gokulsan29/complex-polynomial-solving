@@ -11,3 +11,6 @@ print(f"is_sat: {is_sat}")
 
 is_sat = solvers.check_sat_by_sweeping_primes_z3(system)
 print(f"is_sat: {is_sat}")
+
+is_sat = solvers.check_sat_by_sweeping_primes_cvc5(system)
+print(f"is_sat: {is_sat}")
