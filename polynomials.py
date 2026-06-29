@@ -1,7 +1,7 @@
 import math
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
-Term     = Tuple[int, Dict[str, int]] # (coeff, {var1: exponent1, var2: exponent2})
+Term     = Tuple[int, Dict[str, int]] # (coeff, {var1: exponent1, var2: exponent2 ...})
 Equation = List[Term]
 System   = List[Equation]
 
@@ -37,6 +37,19 @@ def system_to_string(sys : System) -> str:
   for eqn in sys:
     parts.append(equation_to_string(eqn))
   return "\n".join(parts).strip()
+
+def equation_get_vars(eqn : Equation) -> Set[str]:
+  vars = set()
+  for _, vars_dict in eqn:
+    for var_name in vars_dict.keys():
+      vars.add(var_name)
+  return vars
+
+def system_get_vars(sys : System) -> Set[str]:
+  vars = set()
+  for eqn in sys:
+    vars.union(equation_get_vars(eqn))
+  return vars
 
 def split_equation_into_real_and_complex(eqn : Equation) -> Tuple[Equation, Equation]:
   real_eq = []
