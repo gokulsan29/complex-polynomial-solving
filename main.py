@@ -1,7 +1,7 @@
 import solvers
 import polynomials
 
-system = [[(2, {"x" : 2}), (-1, {"y" : 1}), (-1, {})], [(1, {"y" : 1})]]
+system = [[(2, {"x": 2}), (-1, {"y": 1}), (-1, {})], [(1, {"y": 1})]]
 print("Printing system")
 print(polynomials.system_to_string(system))
 print("System Done")

@@ -1,9 +1,11 @@
 import math
 from typing import Dict, List, Set, Tuple
 
-Term     = Tuple[int, Dict[str, int]] # (coeff, {var1: exponent1, var2: exponent2 ...})
+# (coeff, {var1: exponent1, var2: exponent2 ...})
+Term = Tuple[int, Dict[str, int]]
 Equation = List[Term]
-System   = List[Equation]
+System = List[Equation]
+
 
 def equation_to_string(eqn: Equation) -> str:
     """Human-readable rendering with original integer coefficients."""
@@ -32,62 +34,68 @@ def equation_to_string(eqn: Equation) -> str:
         s = s[2:]
     return (s if s else "0") + " = 0"
 
-def system_to_string(sys : System) -> str:
-  parts = []
-  for eqn in sys:
-    parts.append(equation_to_string(eqn))
-  return "\n".join(parts).strip()
 
-def equation_get_vars(eqn : Equation) -> Set[str]:
-  vars = set()
-  for _, vars_dict in eqn:
-    for var_name in vars_dict.keys():
-      vars.add(var_name)
-  return vars
+def system_to_string(sys: System) -> str:
+    parts = []
+    for eqn in sys:
+        parts.append(equation_to_string(eqn))
+    return "\n".join(parts).strip()
 
-def system_get_vars(sys : System) -> Set[str]:
-  vars = set()
-  for eqn in sys:
-    vars.union(equation_get_vars(eqn))
-  return vars
 
-def split_equation_into_real_and_complex(eqn : Equation) -> Tuple[Equation, Equation]:
-  real_eq = []
-  imag_eq = []
+def equation_get_vars(eqn: Equation) -> Set[str]:
+    vars = set()
+    for _, vars_dict in eqn:
+        for var_name in vars_dict.keys():
+            vars.add(var_name)
+    return vars
 
-  for coeff, vars_dict in eqn:
-    current_terms : List[Tuple[int, Dict[str, int], int]] = [(coeff, {}, 0)]
 
-    for var_name, exponent in vars_dict.items():
-      new_terms = []
-      for c_val, c_vars, c_i_pow in current_terms:
-        for k in range(exponent + 1):
-          new_coeff = c_val * math.comb(exponent, k)
-          new_vars = c_vars.copy()
+def system_get_vars(sys: System) -> Set[str]:
+    vars = set()
+    for eqn in sys:
+        vars.union(equation_get_vars(eqn))
+    return vars
 
-          if exponent - k > 0:
-            new_vars[f"{var_name}_r"] = exponent - k
-          if k > 0:
-            new_vars[f"{var_name}_i"] = k
 
-          new_terms.append((new_coeff, new_vars, c_i_pow + k))
-      current_terms = new_terms
+def split_equation_into_real_and_complex(eqn: Equation) -> Tuple[Equation, Equation]:
+    real_eq = []
+    imag_eq = []
 
-    for val, v_dict, i_pow in current_terms:
-      if i_pow % 2 == 0:
-        real_eq.append((val * (1 if i_pow % 4 == 0 else -1), v_dict))
-      else:
-        imag_eq.append((val * (1 if i_pow % 4 == 1 else -1), v_dict))
+    for coeff, vars_dict in eqn:
+        current_terms: List[Tuple[int, Dict[str, int], int]] = [(coeff, {}, 0)]
 
-  return real_eq, imag_eq
+        for var_name, exponent in vars_dict.items():
+            new_terms = []
+            for c_val, c_vars, c_i_pow in current_terms:
+                for k in range(exponent + 1):
+                    new_coeff = c_val * math.comb(exponent, k)
+                    new_vars = c_vars.copy()
 
-def split_system_into_real_and_complex(sys : System) -> Tuple[System, System]:
-  real_system = []
-  imag_system = []
+                    if exponent - k > 0:
+                        new_vars[f"{var_name}_r"] = exponent - k
+                    if k > 0:
+                        new_vars[f"{var_name}_i"] = k
 
-  for eqn in sys:
-    real_equation, imag_equation = split_equation_into_real_and_complex(eqn)
-    real_system.append(real_equation)
-    imag_system.append(imag_equation)
+                    new_terms.append((new_coeff, new_vars, c_i_pow + k))
+            current_terms = new_terms
 
-  return real_system, imag_system
+        for val, v_dict, i_pow in current_terms:
+            if i_pow % 2 == 0:
+                real_eq.append((val * (1 if i_pow % 4 == 0 else -1), v_dict))
+            else:
+                imag_eq.append((val * (1 if i_pow % 4 == 1 else -1), v_dict))
+
+    return real_eq, imag_eq
+
+
+def split_system_into_real_and_complex(sys: System) -> Tuple[System, System]:
+    real_system = []
+    imag_system = []
+
+    for eqn in sys:
+        real_equation, imag_equation = split_equation_into_real_and_complex(
+            eqn)
+        real_system.append(real_equation)
+        imag_system.append(imag_equation)
+
+    return real_system, imag_system
