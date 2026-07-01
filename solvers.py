@@ -25,6 +25,15 @@ class SatResult(enum.Enum):
         else:
             return SatResult.UNKNOWN
 
+    @staticmethod
+    def from_optional_bool(sat_result: bool | None) -> SatResult:
+        if sat_result is None:
+            return SatResult.UNKNOWN
+        elif sat_result:
+            return SatResult.SAT
+        else:
+            return SatResult.UNSAT
+
 
 def convert_equation_to_z3_expr_using_reals(eqn: Equation) -> z3.ExprRef:
     eqn_expr = None
@@ -121,13 +130,13 @@ def check_sat_by_sweeping_primes(sys: System,
             had_timeout_or_unknown = True
 
     ratio_of_sat = num_sat / NUM_PRIMES_TO_SAMPLE
-    if ratio_of_sat >= 0.7:
+    if ratio_of_sat >= 2/3:
         return SatResult.SAT
 
     if had_timeout_or_unknown:
         return SatResult.UNKNOWN
 
-    if ratio_of_sat <= 0.3:
+    if ratio_of_sat <= 1/3:
         return SatResult.UNSAT
 
     return SatResult.UNKNOWN

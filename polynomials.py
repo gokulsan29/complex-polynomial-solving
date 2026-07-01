@@ -53,7 +53,7 @@ def equation_get_vars(eqn: Equation) -> Set[str]:
 def system_get_vars(sys: System) -> Set[str]:
     vars = set()
     for eqn in sys:
-        vars.union(equation_get_vars(eqn))
+        vars.update(equation_get_vars(eqn))
     return vars
 
 
