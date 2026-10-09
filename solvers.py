@@ -8,7 +8,7 @@ import polynomials
 from constants import PRIMES
 from polynomials import Equation, System
 
-NUM_PRIMES_TO_SAMPLE = 3
+NUM_PRIMES_TO_SAMPLE = 20
 
 
 class SatResult(enum.Enum):
